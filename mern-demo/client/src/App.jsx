@@ -1,11 +1,13 @@
 import { useState, useEffect } from 'react';
 import './App.css';
 
-const API_URL = 'https://urban-dollop-7vxvj7gq99gg2rvg4-5000.app.github.dev/api/students';
+const API_URL = `${import.meta.env.VITE_API_URL || 'http://localhost:5000'}/api/students`;
+const emptyForm = { studentId: '', name: '', email: '' };
 
 function App() {
   const [students, setStudents] = useState([]);
-  const [form, setForm] = useState({ studentId: '', name: '', email: '' });
+  const [form, setForm] = useState(emptyForm);
+  const [editingId, setEditingId] = useState(null);
 
   const fetchStudents = async () => {
     const res = await fetch(API_URL);
@@ -23,17 +25,31 @@ function App() {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    await fetch(API_URL, {
-      method: 'POST',
+    const url = editingId ? `${API_URL}/${editingId}` : API_URL;
+    const method = editingId ? 'PUT' : 'POST';
+    await fetch(url, {
+      method,
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(form)
     });
-    setForm({ studentId: '', name: '', email: '' });
+    setForm(emptyForm);
+    setEditingId(null);
     fetchStudents();
+  };
+
+  const handleEdit = (sv) => {
+    setEditingId(sv._id);
+    setForm({ studentId: sv.studentId, name: sv.name, email: sv.email });
+  };
+
+  const handleCancel = () => {
+    setEditingId(null);
+    setForm(emptyForm);
   };
 
   const handleDelete = async (id) => {
     await fetch(`${API_URL}/${id}`, { method: 'DELETE' });
+    if (editingId === id) handleCancel();
     fetchStudents();
   };
 
@@ -45,7 +61,10 @@ function App() {
         <input name="studentId" placeholder="MSSV" value={form.studentId} onChange={handleChange} required />
         <input name="name" placeholder="Họ tên" value={form.name} onChange={handleChange} required />
         <input name="email" placeholder="Email" value={form.email} onChange={handleChange} required />
-        <button type="submit">Thêm sinh viên</button>
+        <button type="submit">{editingId ? 'Lưu' : 'Thêm sinh viên'}</button>
+        {editingId && (
+          <button type="button" onClick={handleCancel}>Hủy</button>
+        )}
       </form>
 
       <table border="1" cellPadding="8">
@@ -64,6 +83,7 @@ function App() {
               <td>{sv.name}</td>
               <td>{sv.email}</td>
               <td>
+                <button onClick={() => handleEdit(sv)}>Sửa</button>{' '}
                 <button onClick={() => handleDelete(sv._id)}>Xóa</button>
               </td>
             </tr>

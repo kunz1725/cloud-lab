@@ -1,0 +1,9 @@
+services:
+  server:
+    image: kunz1725/mern-server:1.0
+    build:
+      context: ../mern-demo
+      dockerfile: ../docker/Dockerfile
+    network_mode: host
+    env_file:
+      - ../mern-demo/.env
